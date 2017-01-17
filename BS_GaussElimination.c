@@ -1,22 +1,23 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <gaussSeidel.h>
+#include <gaussElimination.h>
 
-void generateSolution(int combination[],double **A,double *B,int start,int index,int m,int n,double err)
+
+void generateSolution(int combination[],double **A,double *B,int start,int index,int m,int n)
 {
-    int j=0,k=0,i;
+    int j=0,k=0,i,flag;
     double *x,*solution;
     x=(double *)malloc(m*sizeof(double));
     solution=(double *)malloc(n*sizeof(double));
 
-    if (index==m)
+    if(index==m)
     {
         double **A_square;
         A_square=(double ** )malloc(m*sizeof(double * ));
         for (j=0;j<m;j++)
-            {
-                A_square[j]=(double *)malloc(m*sizeof(double));
-            }
+        {
+            A_square[j]=(double *)malloc(m*sizeof(double));
+        }
         for (j=0;j<m;j++)
         {
             for (k=0;k<m;k++)
@@ -26,7 +27,7 @@ void generateSolution(int combination[],double **A,double *B,int start,int index
             }
         }
 
-        x = gaussSeidel(A_square,B,m,err);
+        x = gaussElimination(A_square,B,m);
 
         for(j=0;j<n;j++)
         {
@@ -36,12 +37,21 @@ void generateSolution(int combination[],double **A,double *B,int start,int index
         {
             solution[combination[k]]=x[k];
         }
-        printf("[");
-        for (j=0;j<n;j++)
+
+        flag = 0;
+        for(k=0;k<m;k++)
         {
-            printf("%.3lf ",solution[j]);
+        	if(x[k]!=0) flag=1;
         }
-        printf("]\n");
+        if(flag!=0)
+        {
+        	printf("[");
+	        for (j=0;j<n;j++)
+	        {
+	            printf("%.3lf ",solution[j]);
+	        }
+	        printf("]\n");
+        }
         return;
     }
 
@@ -52,19 +62,18 @@ void generateSolution(int combination[],double **A,double *B,int start,int index
     }
 }
 
+
 int main()
 {
-
-	int n,m,i,j,*combination;
-    float err=0.001;
+	
+	int n,i,j,m,*combination;
 	double **A,*B;
 
+	//Get value of N
 	printf("Enter the value of N: ");
 	scanf("%d",&n);
-    printf("Enter the value of M: ");
+	printf("Enter the value of M: ");
     scanf("%d",&m);
-    printf("Enter the value of error permissible: ");
-    scanf("%f",&err);
 
    	A = (double **)malloc(m *sizeof(double *));
     for (i=0; i<m; i++)
@@ -73,27 +82,31 @@ int main()
     }
 
     B = (double *)malloc(m*sizeof(double));
-
     combination = (int *)malloc(m*sizeof(int));
-
+    //Taking the MATICES as input
     printf("Enter MATRIX A\n");
     for(i=0;i<m;i++)
     {
     	for(j=0;j<n;j++)
     	{
-    		printf("A[%d][%d]=",i,j);
     		scanf("%lf",&A[i][j]);
     	}
     }
 
     printf("Enter MATRIX B\n");
-    for(i=0;i<m;i++)
+    for(i=0;i<n;i++)
     {
-    	printf("B[%d]=",i);
 		scanf("%lf",&B[i]);
     }
+
     printf("Printing Basic solutions \n");
-    generateSolution(combination,A,B,0,0,m,n,err);
+    generateSolution(combination,A,B,0,0,m,n);
+
+    X = gaussElimination(A,B,n);
+
+
+    for(i=0;i<n;i++) printf("%lf ",X[i]);
+    	
 
 	return 0;
 }
