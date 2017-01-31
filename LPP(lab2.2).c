@@ -173,7 +173,7 @@ int main()
 
 	int n,i,j,m,*combination,input,flag,temp;
 	double **A,*B,*expression;
-	printf("This program will maximize an expression with LPP conditions of the form <=\n");
+	printf("This program will maximize an expression with LPP constraints of the form <=\n");
 	printf("------------------------------\n");
 	//Get value of N
 	printf("Enter the number of variables: ");
