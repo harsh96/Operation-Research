@@ -28,11 +28,11 @@ int NCM(int n,int m)
 
 void swap(double **A,double *B,int i,int j)
 {
-    float *tmp = A[i];
+    double *tmp = A[i];
     A[i]=A[j];
     A[j] = tmp;
 
-    float tmp2 = B[i];
+    double tmp2 = B[i];
     B[i]=B[j];
     B[j]=tmp2;
 }
@@ -104,7 +104,7 @@ double * gaussElimination(double **A,double *B,int n)
     for(i=n-1;i>=0;i--)
     {
         X[i] = B[i];
-        for(j=0;j<i;j++)
+        for(j=n-1;j>i;j--)
         {
             X[i] -= A[i][j]*X[j];
         }
@@ -124,11 +124,13 @@ void generateSolution(int combination[],double **A,double *B,int start,int index
 
     if(index==m)
     {
-        double **A_square;
+        double **A_square,*b_temp;
+        b_temp = (double *)malloc(m*sizeof(double));
         A_square=(double ** )malloc(m*sizeof(double * ));
         for (j=0;j<m;j++)
         {
             A_square[j]=(double *)malloc(m*sizeof(double));
+            b_temp[j] = B[j];
         }
         for (j=0;j<m;j++)
         {
@@ -139,7 +141,8 @@ void generateSolution(int combination[],double **A,double *B,int start,int index
             }
         }
 
-        x = gaussElimination(A_square,B,m);
+
+        x = gaussElimination(A_square,b_temp,m);
 
         for(j=0;j<n;j++)
         {
@@ -164,12 +167,14 @@ void generateSolution(int combination[],double **A,double *B,int start,int index
 }
 
 
+
 int main()
 {
 
 	int n,i,j,m,*combination,input,flag,temp;
 	double **A,*B,*expression;
-
+	printf("This program will maximize an expression with LPP conditions of the form <=\n");
+	printf("------------------------------\n");
 	//Get value of N
 	printf("Enter the number of variables: ");
 	scanf("%d",&n);
@@ -193,19 +198,23 @@ int main()
     combination = (int *)malloc(m*sizeof(int));
     //Taking the MATICES as input
     printf("Enter LHS Matrix \n");
-    for(i=0;i<m;i++)
-    {
-        for(j=0;j<n;j++)
-        {
-            A[i][j] =1;
-        }
-    }
+    
     for(i=0;i<m;i++)
     {
     	for(j=0;j<n;j++)
     	{
     		scanf("%lf",&A[i][j]);
     	}
+    }
+
+    //adding slack variables
+    for(i=0;i<m;i++)
+    {
+        for(j=n;j<n+m;j++)
+        {
+            A[i][j] =0;
+        }
+        A[i][i+n] =1;
     }
 
     printf("Enter RHS Matrix\n");
@@ -221,7 +230,45 @@ int main()
     {
         scanf("%lf",&expression[i]);
     }
-    
 
+    double max=0,sum;
+    int maxIdx;
+    for(i=0;i<count;i++)
+    {
+        flag = 0;
+        for(j=0;j<n+m;j++)
+        {
+            if(data[i][j]<0) { flag=1;break;}
+        }
+        if(flag==0)
+        {
+        	sum = 0;
+            for(j=0;j<n;j++)
+            {
+            	sum  += expression[j]*data[i][j];
+            }
+            if(max<sum)
+            {
+            	max = sum;
+            	maxIdx = i;
+            }
+        }
+    }
+
+    printf("The maximum value of the expression ");
+    for(i=0;i<n-1;i++)
+    {
+    	printf("(%.2lf)x%d + ",expression[i],(i+1));
+    }
+    printf("(%.2lf)x%d is \n",expression[n-1],(n));
+    
+    printf("%.5lf\n",max);
+    printf("for values of xi as\n");
+    printf("[ ");
+	for(i=0;i<n;i++)
+    {
+    	printf("%.3lf ",data[maxIdx][i]);
+    }
+    printf("]\n");
 	return 0;
 }
