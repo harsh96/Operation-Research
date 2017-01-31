@@ -28,11 +28,11 @@ int NCM(int n,int m)
 
 void swap(double **A,double *B,int i,int j)
 {
-    float *tmp = A[i];
+    double *tmp = A[i];
     A[i]=A[j];
     A[j] = tmp;
 
-    float tmp2 = B[i];
+    double tmp2 = B[i];
     B[i]=B[j];
     B[j]=tmp2;
 }
@@ -104,7 +104,7 @@ double * gaussElimination(double **A,double *B,int n)
     for(i=n-1;i>=0;i--)
     {
         X[i] = B[i];
-        for(j=0;j<i;j++)
+        for(j=n-1;j>i;j--)
         {
             X[i] -= A[i][j]*X[j];
         }
@@ -124,11 +124,13 @@ void generateSolution(int combination[],double **A,double *B,int start,int index
 
     if(index==m)
     {
-        double **A_square;
+        double **A_square,*b_temp;
+        b_temp = (double *)malloc(m*sizeof(double));
         A_square=(double ** )malloc(m*sizeof(double * ));
         for (j=0;j<m;j++)
         {
             A_square[j]=(double *)malloc(m*sizeof(double));
+            b_temp[j] = B[j];
         }
         for (j=0;j<m;j++)
         {
@@ -139,7 +141,8 @@ void generateSolution(int combination[],double **A,double *B,int start,int index
             }
         }
 
-        x = gaussElimination(A_square,B,m);
+
+        x = gaussElimination(A_square,b_temp,m);
 
         for(j=0;j<n;j++)
         {
