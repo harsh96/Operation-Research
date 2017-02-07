@@ -1,8 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 float zero=0.000000001; //as floating point equality 0 doesn’t work
 int unbounded = 0;
+double M = 1000000;
 
 double absolute(double a)
 {
@@ -23,9 +25,13 @@ void makeTableau(double **A,double *B,double *expression,int rows,int columns,do
         }
     }
 
-    for(j=0;j<n;j++)
+    for(j=2;j<columns-1;j++)
     {
-        tableau[1][2+j] = expression[j];
+        tableau[1][j] = (-1)*expression[j-2];
+        for(i=2;i<rows;i++)
+        {
+          tableau[1][j] += tableau[i][1]*tableau[i][j];   
+        }
     }
 
     for(i=2;i<rows;i++)
@@ -133,8 +139,9 @@ void applySimplex(double **tableau,int rows,int columns)
 int main()
 {
 
-	int n,i,j,m,input,flag,temp;
-	double **A,*B,*expression,**tableau;
+	int n,i,j,m,input,flag,temp,totalVariables;
+    char symbol,dummy;
+	double **A,*B,*expression,**tableau,**additional;
 	printf("This program will maximize an expression with constraints of the form <=\n");
 	printf("------------------------------\n");
 	//Get value of N
@@ -143,12 +150,46 @@ int main()
 	printf("Enter the number of constraint equations: ");
     scanf("%d",&m);
 
+    printf("Enter LHS Constraint Matrix followed by < or >\n");
 
-   	A = (double **)malloc(m * sizeof(double *));
+    A = (double **)malloc(m * sizeof(double *));
     for (i=0; i<m; i++)
     {
-    	A[i] = (double *)malloc((n+m) * sizeof(double));
+        A[i] = (double *)malloc(n * sizeof(double));
     }
+
+    additional = (double **)malloc(2 * sizeof(double *));
+    additional[0] = (double *)malloc(m * sizeof(double));
+    additional[1] = (double *)malloc(m * sizeof(double));
+    totalVariables = n;
+
+    for(i=0;i<m;i++)
+    {
+    	for(j=0;j<n;j++)
+    	{
+    		scanf("%lf",&A[i][j]);
+    	}
+
+        scanf("%c",&dummy);
+        scanf("%c",&symbol);
+        temp = '<';
+
+        if(symbol == temp)
+        {
+            additional[0][i] = 1;
+            additional[1][i] = 0;
+            totalVariables++;
+        }
+        else
+        {
+            additional[0][i] = -1;
+            additional[1][i] = 1;
+            totalVariables++;
+            totalVariables++;
+        }
+    }
+
+
 
     tableau = (double **)malloc((m+2) * sizeof(double *));
     for (i=0; i<m+2; i++)
@@ -158,16 +199,6 @@ int main()
 
     B = (double *)malloc(m*sizeof(double));
     expression = (double *)malloc(n*sizeof(double));
-
-    printf("Enter LHS Constraint Matrix \n");
-    
-    for(i=0;i<m;i++)
-    {
-    	for(j=0;j<n;j++)
-    	{
-    		scanf("%lf",&A[i][j]);
-    	}
-    }
 
     //adding slack variables
     for(i=0;i<m;i++)
@@ -189,7 +220,7 @@ int main()
     for(i=0;i<n;i++)
     {
         scanf("%lf",&expression[i]);
-        expression[i] = -1*expression[i];
+        expression[i] = expression[i];
     }
 
     makeTableau(A,B,expression,m+2,n+m+3,tableau);
@@ -199,9 +230,9 @@ int main()
         printf("The maximum value of the expression ");
         for(i=0;i<n-1;i++)
         {
-            printf("(%.2lf)x%d + ",(-1)*expression[i],(i+1));
+            printf("(%.2lf)x%d + ",expression[i],(i+1));
         }
-        printf("(%.2lf)x%d is ",(-1)*expression[n-1],(n));
+        printf("(%.2lf)x%d is ",expression[n-1],(n));
         
         printf("%.5lf\n",tableau[1][m+n+2]);
         printf("for values of xi as\n");
