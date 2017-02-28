@@ -8,11 +8,167 @@ int infeasible = 0;
 int alternate = 0;
 int altIdx = 0;
 double M = 10000;
+double **data;
+int count=0;
 
 double absolute(double a)
 {
     if(a<0) return (-1)*a;
     else return a;
+}
+
+int NCM(int n,int m)
+{
+    int temp = 1,i;
+    for(i=n;i>(n-m);i--)
+    {
+        temp *= i;
+    }
+    for(i=m;i>1;i--)
+    {
+        temp /= i;
+    }
+    return temp;
+}
+
+void swap(double **A,double *B,int i,int j)
+{
+    double *tmp = A[i];
+    A[i]=A[j];
+    A[j] = tmp;
+
+    double tmp2 = B[i];
+    B[i]=B[j];
+    B[j]=tmp2;
+}
+
+int isSingular(double **A,double *B,int n,int i)
+{
+    int j;
+
+    if(absolute(A[i][i])>zero)
+    {
+        return 0;
+    }
+    else
+    {
+        for(j=i+1;j<n;j++)
+        {
+            if(absolute(A[j][i])>zero)
+            {
+                swap(A,B,i,j);
+                return 0;
+            }
+        }
+        return 1;
+    }
+}
+
+
+double * gaussElimination(double **A,double *B,int n)
+{
+    int i,j,k,flag;
+    double factor,*X;
+
+    X = (double *)malloc(n*sizeof(double));
+
+
+    flag=0;
+    for(i=0;i<n-1;i++) //Going From 1st row to (n-1)th row as the base row with base element as i,i
+    {
+        if(!isSingular(A,B,n,i))
+        {
+            for(j=i+1;j<n;j++)//Going from the (i+1)th row to the nth row each time with row base element as j,i
+            {
+                factor = A[j][i]/A[i][i];
+
+                for(k=0;k<n;k++)//For the entire row subtract baserow * (factor)
+                {
+                    A[j][k] -= (A[i][k] * factor);
+                }
+                B[j] -= B[i]*factor;
+            }
+        }
+        else
+        {
+            flag=1;
+            break;
+        }
+
+    }
+
+
+
+    for(i=0;i<n;i++) X[i] = 0;
+
+    if(flag==1)
+    {
+        return X;
+    }
+
+    for(i=n-1;i>=0;i--)
+    {
+        X[i] = B[i];
+        for(j=n-1;j>i;j--)
+        {
+            X[i] -= A[i][j]*X[j];
+        }
+        X[i] /= A[i][i];
+    }
+
+    return X;
+}
+
+
+void generateSolution(int combination[],double **A,double *B,int start,int index,int m,int n)
+{
+    int j=0,k=0,i,flag;
+    double *x,*solution;
+    x=(double *)malloc(m*sizeof(double));
+    solution=(double *)malloc(n*sizeof(double));
+
+    if(index==m)
+    {
+        double **A_square,*b_temp;
+        b_temp = (double *)malloc(m*sizeof(double));
+        A_square=(double ** )malloc(m*sizeof(double * ));
+        for (j=0;j<m;j++)
+        {
+            A_square[j]=(double *)malloc(m*sizeof(double));
+            b_temp[j] = B[j];
+        }
+        for (j=0;j<m;j++)
+        {
+            for (k=0;k<m;k++)
+            {
+
+                A_square[j][k]=A[j][combination[k]];
+            }
+        }
+
+
+        x = gaussElimination(A_square,b_temp,m);
+
+        for(j=0;j<n;j++)
+        {
+            solution[j]=0;
+        }
+        for (k=0;k<m;k++)
+        {
+            solution[combination[k]]=x[k];
+        }
+
+        data[count] = solution;
+        count++;
+
+        return;
+    }
+
+    for (i=start; i<=n-1 && n-i >= m-index; i++)
+    {
+        combination[index] = i;
+        generateSolution(combination,A,B,i+1,index+1,m,n);
+    }
 }
 
 void makeTableau(double **A,double *B,double *expression,int rows,int columns,double **tableau,int **additional,int n)
@@ -273,14 +429,47 @@ int applySimplex(double **tableau,int rows,int columns)
     return totalIterations;
 }
 
+simplexITimes(double **dummyTableau,int rows,int columns,int i)
+{
+    int i,j,colIdx,totalIterations=0;
+    double minNeg,minRatio,pivot,entCol;
+    while(i--)
+    {
+        minNeg = 0;
+        for(i=2;i<columns-1;i++)
+        {
+            if(dummyTableau[1][i]<minNeg)
+            {
+                minNeg = dummyTableau[1][i];
+                colIdx = i;
+            }
+        }
+
+        if(absolute(minNeg)<zero) break;//all positive reached optimal state
+        for(i=2;i<rows;i++)
+        {
+            if(dummyTableau[i][colIdx] > 0) break;
+        }
+        if(i==rows)
+        {
+            //unbounded
+            break;
+        }
+        else
+        {
+            performSimplexIteration(dummyTableau,rows,columns,colIdx);
+        }    
+    }
+}
+
 int main()
 {
 
-	int n,i,j,m,input,flag,temp,totalVariables;
+	int n,i,j,m,input,flag,temp,totalVariables,*combination,totalIterations;
     char symbol,dummy;
-	double **A,*B,*expression,**tableau;
+	double **A,*B,*expression,**tableau,**dummyTableau,**A_BFS;
     int **additional;
-	printf("Simplex Method\n");
+	printf("Operation Research Lab 5\n");
 	printf("------------------------------\n");
 	//Get value of N
 	printf("Enter the number of variables: ");
@@ -288,12 +477,23 @@ int main()
 	printf("Enter the number of constraint equations: ");
     scanf("%d",&m);
 
+    data = (double **)malloc(NCM(n,m) * sizeof(double *));
+    for (i=0; i<n; i++)
+    {
+        data[i] = (double *)malloc(n * sizeof(double));
+    }
+
     printf("Enter LHS Constraint Matrix followed by < or > or =\n");
 
     A = (double **)malloc(m * sizeof(double *));
     for (i=0; i<m; i++)
     {
         A[i] = (double *)malloc(n * sizeof(double));
+    }
+    A_BFS = (double **)malloc(m * sizeof(double *));
+    for (i=0; i<m; i++)
+    {
+        A[i] = (double *)malloc((n+m) * sizeof(double));
     }
 
     additional = (int **)malloc(2 * sizeof(int *));
@@ -306,6 +506,7 @@ int main()
     	for(j=0;j<n;j++)
     	{
     		scanf("%lf",&A[i][j]);
+            A_BFS[i][j] = A[i][j]; 
     	}
 
         scanf("%c",&dummy);
@@ -313,12 +514,22 @@ int main()
 
         if(symbol == '<')
         {
+            for(j=n;j<n+m;j++)
+            {
+                A_BFS[i][j] =0;
+            }
+            A_BFS[i][i+n] =1;
             additional[0][i] = 1;
             additional[1][i] = 0;
             totalVariables++;
         }
         else if(symbol == '>')
         {
+            for(j=n;j<n+m;j++)
+            {
+                A_BFS[i][j] =0;
+            }
+            A_BFS[i][i+n] = -1;
             additional[0][i] = -1;
             additional[1][i] = 1;
             totalVariables++;
@@ -326,6 +537,11 @@ int main()
         }
         else
         {
+            for(j=n;j<n+m;j++)
+            {
+                A_BFS[i][j] =0;
+            }
+            A_BFS[i][i+n] = 0;
             additional[0][i] = 0;
             additional[1][i] = 1;
             totalVariables++;
@@ -337,8 +553,14 @@ int main()
     {
         tableau[i] = (double *)malloc((totalVariables+3) * sizeof(double));
     }
+    dummyTableau = (double **)malloc((m+2) * sizeof(double *));
+    for (i=0; i<m+2; i++)
+    {
+        dummyTableau[i] = (double *)malloc((totalVariables+3) * sizeof(double));
+    }
 
     B = (double *)malloc(m*sizeof(double));
+    combination = (int *)malloc(m*sizeof(int));
     expression = (double *)malloc((n+1)*sizeof(double));
 
     printf("Enter RHS Constraint Matrix\n");
@@ -353,8 +575,89 @@ int main()
         scanf("%lf",&expression[i]);
     }
 
+    generateSolution(combination,A_BFS,B,0,0,m,n+m);
     makeTableau(A,B,expression,m+2,totalVariables+3,tableau,additional,n);
-    applySimplex(tableau,m+2,totalVariables+3);
+    totalIterations = applySimplex(tableau,m+2,totalVariables+3);
+
+    printf("----------------------------\n");
+    printf("Select among the following options\n");
+    printf("1 List all BFS\n");
+    printf("2 Number of iterations to solve the problem\n");
+    printf("3 List of all Non-basic variables along with net evaluations in ith iteration\n");
+    printf("4 List of Basic variables along with min ratios in ith iteration\n");
+    printf("5 simplex table of ith iteration\n");
+    printf("6 optimal solution (if exists else a report on others)\n");
+    printf("0 to exit\n");
+    printf("----------------------------\n");
+    while(1)
+    {
+        scanf("%d",&input);
+        if(input==1)
+        {
+            printf("Printing all BFS\n");
+            for(i=0;i<count;i++)
+            {
+                flag = 0;
+                for(j=0;j<n;j++)
+                {
+                    if(data[i][j]<0) flag=1;
+                }
+                if(flag==0)
+                {
+                    printf("[ ");
+                    for(j=0;j<n;j++)
+                    {
+                        printf("%.3lf ", data[i][j]);
+                    }
+                    printf(" ]");
+                    printf("\n");
+                }
+            }
+        }
+        if(input==2)
+        {
+            if(unbounded==1)
+            {
+                printf("The expression is unbounded\n");
+                
+            }
+            else if(infeasible==1)
+            {
+                printf("The LPP is infeasible\n");
+            } 
+            else
+            {
+                printf("Total iterations= %d\n",totalIterations);
+            }
+        }
+        if(input==3)
+        {
+            makeTableau(A,B,expression,m+2,totalVariables+3,dummyTableau,additional,n);
+            printf("Enter the value of i: ");
+            scanf("%d",&i);
+            if(i<totalIterations)
+            {
+                simplexITimes(dummyTableau,m+2,totalVariables+3,i);
+                printf("Non Basic Variables for %dth iteration: ",i);
+                for(i=2;i<totalVariables+2;i++)
+                {
+                    for(j=2;j<m+2;j++)
+                    {
+                        if(dummyTableau[0][i]==dummyTableau[j][0]) break;
+                    }
+                    if(j==rows)
+                    {
+                        temp = ((int)tableau[0][i])%100;
+                        if(tableau[0][i] > 300) printf("  artif%d ",temp); 
+                        else if(tableau[0][i] > 200) printf("  slack%d ",temp);
+                        else if(tableau[0][i]>100) printf(" surplus%d ",temp);
+                        else printf("    X%d   ",temp);
+                    }
+                }  
+            }
+            
+        }
+    }
     if(unbounded==1)
     {
         printf("The expression is unbounded\n");
