@@ -331,6 +331,7 @@ int performSimplexIteration(double **tableau,int rows,int columns,int idx)
     if(i==rows)
     {
         //unbounded
+        unbounded = 1;
         return -1;
     }
     else
@@ -385,8 +386,9 @@ int applySimplex(double **tableau,int rows,int columns)
     while(1)
     {
         temp = performSimplexIteration(tableau,rows,columns,-1);
+        totalIterations++; 
         if(temp!=1) break;
-        else totalIterations++;       
+              
     }
     for(i=2;i<rows;i++)
     {
@@ -692,9 +694,10 @@ int main()
                 {
                     for(j=2;j<m+2;j++)
                     {
-                        if(i == (int)tableau[j][0])
+                        temp = (int)tableau[j][0];
+                        if(i == temp)
                         {
-                            printf("%.3lf ",tableau[j][m+n+2]);
+                            printf("%.3lf ",tableau[j][totalVariables+2]);
                             break;
                         }
                     }
@@ -714,7 +717,7 @@ int main()
                             temp = tableau[j][0];//typecasting to int
                             if(i == temp)
                             {
-                                printf("%.3lf ",tableau[j][m+n+2]);
+                                printf("%.3lf ",tableau[j][totalVariables+2]);
                                 break;
                             }
                         }
