@@ -629,7 +629,7 @@ int main()
             scanf("%d",&i);
             if(i<=totalIterations)
             {
-                printf("Basic Variables along with ratios for %d-th iteration are: ",i);
+                printf("Basic Variables along with ratios for %d-th iteration are: \n",i);
                 while(i--)
                 {
                     performSimplexIteration(dummyTableau,m+2,totalVariables+3,-1);
@@ -653,7 +653,7 @@ int main()
                     else printf("X%d ",temp); 
 
                     if(dummyTableau[j][colIdx]>0) printf(" %.3lf/%.3lf = %.3lf\n",dummyTableau[j][totalVariables+2],dummyTableau[j][colIdx],(dummyTableau[j][totalVariables+2]/dummyTableau[j][colIdx]));
-                    else printf("non positive entering column variable");
+                    else printf("non positive entering column variable\n");
                 }
                 printf("\n"); 
             }
@@ -673,6 +673,7 @@ int main()
                 }
                 printTableau(dummyTableau,m+2,totalVariables+3);
             } 
+            else printf("i cannot be more than the totalIterations (= %d )\n",totalIterations);
         }
         else if(input==6)
         {
