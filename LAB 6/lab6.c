@@ -176,9 +176,9 @@ int applyDualSimplex(double **tableau,int rows,int columns)
 int main()
 {
 
-	int n,i,j,m,input,temp;
+	int n,i,j,m,input,temp,totalIterations;
     char symbol,dummy;
-	double **A,*B,*expression,**tableau;
+	double **A,*B,*expression,**tableau,**dummyTableau;
 	printf("Dual Simplex Method\n");
 	printf("------------------------------\n");
 	printf("Enter the number of variables: ");
@@ -223,6 +223,12 @@ int main()
     {
         tableau[i] = (double *)malloc((n+m+2) * sizeof(double));
     }
+
+    dummyTableau = (double **)malloc((m+2) * sizeof(double *));
+    for (i=0; i<m+2; i++)
+    {
+        dummyTableau[i] = (double *)malloc((n+m+2) * sizeof(double));
+    }
     
     expression = (double *)malloc((n+1)*sizeof(double));
 
@@ -234,51 +240,96 @@ int main()
     expression[n] *= -1 ;//since we need 1 for minimisation
 
     makeTableau(A,B,expression,n,m,tableau);
-    applyDualSimplex(tableau,m+2,m+n+2);
-    if(unbounded==1)
-    {
-        printf("The expression is unbounded\n");
-    }
-    else if(infeasible==1)
-    {
-        printf("The LPP is infeasible\n");
-    }
-    else 
-    {
-        
-        if(expression[n]==-1)
-        {
-            printf("The maximum value of the expression "); 
-        }
-        else
-        {
-            printf("The minimum value of the expression ");
-        }
-        for(i=0;i<n-1;i++)
-        {
-            printf("(%.2lf)x%d + ",expression[i],(i+1));
-        }
-        printf("(%.2lf)x%d is ",expression[n-1],(n));
-        printf("%.5lf\n",(tableau[1][m+n+1])*expression[n]);
-        printf("for values of xi as\n");
-        printf("[ ");
-        for(i=1;i<=n;i++)
-        {
-            for(j=2;j<m+2;j++)
-            {
-                temp = tableau[j][0];//typecasting to int
-                if(i == temp)
-                {
-                    printf("%.3lf ",tableau[j][m+n+1]);
-                    break;
-                }
-            }
-            if(j==(m+2)) printf("0.000 ");
+    totalIterations = applyDualSimplex(tableau,m+2,m+n+2);
 
+    printf("----------------------------\n");
+    printf("Enter 1 to view intitial tableau\n");
+    printf("Enter 2 to print table of ith iteration\n");
+    printf("Enter 3 to view the optimal solution\n");
+    printf("Enter 4 to view the final tableau\n");
+    printf("Enter 5 to Exit\n");
+    while(1)
+    {
+        printf("----------------------------\n");
+        scanf("%d",&input);
+        if(input == 1)
+        {
+            makeTableau(A,B,expression,n,m,dummyTableau);
+            printTableau(dummyTableau,m+2,m+n+2);
         }
-        printf("]\n");
-        
-        printTableau(tableau,m+2,m+n+2);
+        else if(input==2)
+        {
+            printf("Enter the value of i: ");
+            scanf("%d",&i);
+            if(i<totalIterations)
+            {
+                makeTableau(A,B,expression,n,m,dummyTableau);
+                while(i--)
+                {
+                   performDualSimplexIteration(dummyTableau,m+2,m+n+2); 
+                }
+                printTableau(dummyTableau,m+2,m+n+2);
+            }
+            else
+            {
+                printf("i cannot be greater than %d\n",totalIterations);
+            }
+        }
+        else if(input==3)
+        {
+            if(unbounded==1)
+            {
+                printf("The expression is unbounded\n");
+            }
+            else if(infeasible==1)
+            {
+                printf("The LPP is infeasible\n");
+            }
+            else 
+            {
+                
+                if(expression[n]==-1)
+                {
+                    printf("The maximum value of the expression "); 
+                }
+                else
+                {
+                    printf("The minimum value of the expression ");
+                }
+                for(i=0;i<n-1;i++)
+                {
+                    printf("(%.2lf)x%d + ",expression[i],(i+1));
+                }
+                printf("(%.2lf)x%d is ",expression[n-1],(n));
+                printf("%.5lf\n",(tableau[1][m+n+1])*expression[n]);
+                printf("for values of xi as\n");
+                printf("[ ");
+                for(i=1;i<=n;i++)
+                {
+                    for(j=2;j<m+2;j++)
+                    {
+                        temp = tableau[j][0];//typecasting to int
+                        if(i == temp)
+                        {
+                            printf("%.3lf ",tableau[j][m+n+1]);
+                            break;
+                        }
+                    }
+                    if(j==(m+2)) printf("0.000 ");
+
+                }
+                printf("]\n");
+                
+                
+            }
+        }
+        else if(input==4)
+        {
+            printTableau(tableau,m+2,m+n+2);
+        }
+        else break;
     }
+
+    
 	return 0;
 }
